@@ -55,3 +55,8 @@ cp ix-sensor.service /etc/systemd/system/ && systemctl enable --now ix-sensor
 
 A kernel BPF filter drops plain unicast IP before it reaches Python, so the sensor uses
 little CPU even on busy LANs.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The header in `ixsensor.py` carries it, so a copy of the single
+file keeps its license. The ix.watch name and service are not covered by it.

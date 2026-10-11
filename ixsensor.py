@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Nick Bouwhuis
 """ix-sensor: spot traffic that doesn't belong on an IXP peering LAN and ship it to
 ix.watch (https://ix.watch) over MQTT.
 

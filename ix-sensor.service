@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Nick Bouwhuis
 # systemd unit for ix-sensor (ixsensor.py), the detect-and-report-only watcher that
 # people outside AS202585 run to feed https://ix.watch.
 #   install -m 755 ixsensor.py /usr/local/bin/ixsensor.py
