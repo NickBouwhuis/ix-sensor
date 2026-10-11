@@ -13,6 +13,9 @@ member routers. The sensor flags everything else it can recognise:
 | `lldp`, `cdp`, `stp` | discovery protocols and spanning tree BPDUs |
 | `mndp`, `mt-mactel`, `mt-loop` | MikroTik neighbour discovery, MAC-Telnet/Winbox, loop protect |
 | `syncthing` | Syncthing local discovery (a workstation bridged onto the LAN) |
+| `netmask` | IPv4 broadcast to a smaller subnet's broadcast address inside the LAN: the sender's prefix is too long |
+| `v6-bcast` | IPv6 sent to the Ethernet broadcast address |
+| `romon`, `ubnt`, `rarp` | MikroTik RoMON, Ubiquiti discovery (UDP 10001), reverse ARP |
 | `broadcast`, `multicast` | other L2 broadcast and multicast |
 | `arp-offlan`, `nd-offlan` | ARP or IPv6 ND for a LAN address, sent from an address outside the LAN |
 

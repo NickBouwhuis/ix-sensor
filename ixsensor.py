@@ -145,6 +145,23 @@ def _lan_ok6(lan, addr):
     return a == 0 or a & _LINK_LOCAL6[1] == _LINK_LOCAL6[0] or _in_lan(lan, 6, addr)
 
 
+def _netmask_broadcast(lan, addr):
+    """An IPv4 broadcast to an address inside the LAN that is the broadcast address of a
+    smaller subnet (185.1.184.255 in a /23): the sender has a longer prefix than the IX's,
+    so traffic for peers in the rest of the LAN goes out as broadcast."""
+    a = int.from_bytes(addr, "big")
+    for v, net, mask in lan:
+        if v != 4 or a & mask != net:
+            continue
+        host_bits = 32 - bin(mask).count("1")
+        ones = 0
+        while ones < 32 and (a >> ones) & 1:
+            ones += 1
+        # Not the LAN's own broadcast (all host bits set); at least a /30's worth set.
+        return 2 <= ones < host_bits
+    return False
+
+
 def classify(dst, src, etype, payload, lan=()):
     """Classify frame as violation type, or None if acceptable.
 
@@ -172,6 +189,14 @@ def classify(dst, src, etype, payload, lan=()):
     # MikroTik MAC-Telnet / Winbox discovery
     if etype == 0x9998:
         return "mt-mactel"
+
+    # MikroTik RoMON (Router Management Overlay Network)
+    if etype == 0x88BF:
+        return "romon"
+
+    # Reverse ARP: something asking for its own IP address
+    if etype == 0x8035:
+        return "rarp"
 
     # STP / BPDU
     if dst.startswith("01:80:c2:00:00:0"):
@@ -211,10 +236,18 @@ def classify(dst, src, etype, payload, lan=()):
                 return "mndp"
             if dport == 21027:
                 return "syncthing"
+            if dport == 10001:
+                return "ubnt"
 
-    # Non-ARP broadcast
-    if dst == "ff:ff:ff:ff:ff:ff" and etype != 0x0806:
-        return "broadcast"
+    if dst == "ff:ff:ff:ff:ff:ff":
+        # IPv6 has no broadcast: neighbour discovery uses solicited-node multicast.
+        if etype == 0x86DD:
+            return "v6-bcast"
+        if etype == 0x0800 and len(payload) >= 20 and _netmask_broadcast(lan, payload[16:20]):
+            return "netmask"
+        # Non-ARP broadcast we don't have a more specific type for
+        if etype != 0x0806:
+            return "broadcast"
 
     # IPv6 NDP (Neighbor Solicitation/Advertisement) is normal on IX peering LANs. As with
     # ARP, only ND about a LAN address from a source that isn't (link-local, ::, or in the
@@ -240,7 +273,7 @@ def classify(dst, src, etype, payload, lan=()):
 
 # Header decoding: headers only, never payload
 
-ETHERTYPES = {0x0800: "IPv4", 0x86DD: "IPv6", 0x0806: "ARP", 0x88CC: "LLDP", 0x9003: "MikroTik loop detect",
+ETHERTYPES = {0x0800: "IPv4", 0x86DD: "IPv6", 0x0806: "ARP", 0x8035: "RARP", 0x88BF: "MikroTik RoMON", 0x88CC: "LLDP", 0x9003: "MikroTik loop detect",
               0x9998: "MikroTik MAC-Telnet", 0x8100: "802.1Q", 0x88A8: "802.1ad", 0x8809: "Slow protocols (LACP)"}
 ARP_OPS = {1: "Request", 2: "Reply"}
 IP_PROTOS = {1: "ICMP", 2: "IGMP", 6: "TCP", 17: "UDP", 58: "ICMPv6", 89: "OSPF", 103: "PIM", 112: "VRRP"}
