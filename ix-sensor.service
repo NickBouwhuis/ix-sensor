@@ -1,0 +1,20 @@
+# systemd unit for ix-sensor (ixsensor.py), the detect-and-report-only watcher that
+# people outside AS202585 run to feed https://ix.watch.
+#   install -m 755 ixsensor.py /usr/local/bin/ixsensor.py
+#   install -m 600 ix-sensor.json /etc/ix-sensor.json      # holds the MQTT password
+#   cp ix-sensor.service /etc/systemd/system/ && systemctl enable --now ix-sensor
+[Unit]
+Description=ix-sensor: report IX peering LAN violations to ix.watch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/ixsensor.py --config /etc/ix-sensor.json
+Restart=on-failure
+RestartSec=10
+# Raw sockets and promiscuous mode need root (CAP_NET_RAW + CAP_NET_ADMIN).
+User=root
+StateDirectory=ix-sensor
+
+[Install]
+WantedBy=multi-user.target
