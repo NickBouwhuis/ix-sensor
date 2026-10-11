@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """ix-sensor: spot traffic that doesn't belong on an IXP peering LAN and ship it to
-bgp.rodeo (https://bgp.rodeo/ix-violators/) over MQTT.
+ix.watch (https://ix.watch) over MQTT.
 
 It only detects and reports. Per source (MAC on an IX) it publishes counts, first/last
 seen, the MAC's IP if the local neighbour table knows it, and the last few frames (the
-decoded headers, plus the raw frame for bgp.rodeo's pcap download). These are frames the
-source broadcast to the whole peering LAN. bgp.rodeo resolves who owns the MAC.
+decoded headers, plus the raw frame for ix.watch's pcap download). These are frames the
+source broadcast to the whole peering LAN. ix.watch resolves who owns the MAC.
 
     apt install python3-paho-mqtt          # or: pip install paho-mqtt
     ixsensor.py --config /etc/ix-sensor.json
