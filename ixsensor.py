@@ -17,7 +17,7 @@ Config (mode 0600, it holds the MQTT password):
       "name": "as64500",                                # your MQTT username
       "interfaces": { "eth1.100": "NL-IX" },           # peering LAN interface -> IX name
       "prefixes": { "NL-IX": ["193.239.116.0/22", "2001:7f8:13::/64"] },  # optional, see peering_lan()
-      "mqtt": { "url": "wss://mqtt.bgp.rodeo/", "username": "as64500", "password": "..." },
+      "mqtt": { "url": "wss://mqtt.ix.watch/", "username": "as64500", "password": "..." },
       "state_file": "/var/lib/ix-sensor/state.json"    # optional
     }
 
@@ -716,7 +716,7 @@ class Sensor:
 
 def main():
     import argparse
-    ap = argparse.ArgumentParser(description="Report IX peering LAN violations to bgp.rodeo")
+    ap = argparse.ArgumentParser(description="Report IX peering LAN violations to ix.watch")
     ap.add_argument("--config", default="/etc/ix-sensor.json")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

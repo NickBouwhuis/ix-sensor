@@ -86,7 +86,7 @@ account from step 1:
   "name": "as64500",
   "interfaces": { "eth1.100": "NL-IX" },
   "prefixes": { "NL-IX": ["193.239.116.0/22", "2001:7f8:13::/64"] },
-  "mqtt": { "url": "wss://mqtt.bgp.rodeo/", "username": "as64500", "password": "..." },
+  "mqtt": { "url": "wss://mqtt.ix.watch/", "username": "as64500", "password": "..." },
   "state_file": "/var/lib/ix-sensor/state.json"
 }
 ```
@@ -148,7 +148,7 @@ network caught on your IXP shows up in the table within seconds of the sensor se
 | `paho-mqtt is missing`                                  | Install it (step 2).                                                                        |
 | `peering LAN unknown, ARP/ND address checks off`        | Add the IXP to `prefixes` (step 4). The other checks still run.                             |
 | `MQTT connect refused (rc=4)` or `(rc=5)`               | The username or password is wrong. Check `name` and `mqtt` against our mail.                |
-| `MQTT disconnected (rc=…), reconnecting`, over and over | The sensor can't reach `mqtt.bgp.rodeo` on port 443. Check outbound HTTPS from the machine. |
+| `MQTT disconnected (rc=…), reconnecting`, over and over | The sensor can't reach `mqtt.ix.watch` on port 443. Check outbound HTTPS from the machine. |
 | `BPF pre-filter on … not attached`                      | It still works, but sees all traffic, so it uses more CPU. Mail us the full line.           |
 | `… changed: ifindex … reopening`                        | The interface was recreated (a VLAN or link flap). It picks it up again by itself.          |
 
