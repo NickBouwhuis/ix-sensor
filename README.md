@@ -27,13 +27,13 @@ headers plus the raw frame (at most 1600 bytes), for the public pcap download. T
 frames the source sent to the whole peering LAN (broadcast or multicast), or to your router.
 ix.watch resolves who owns the MAC.
 
-## Add your IX to ix.watch, step by step
+## Add an IX to ix.watch
 
 You're a member of an IXP that ix.watch doesn't watch yet, and you'd like it to. The sensor
 runs on one of your machines, sees what reaches your port on the peering LAN, and reports it.
 Your IXP then gets its own section on ix.watch, credited "via" your network.
 
-### 1. Check what you need
+### 0. You need
 
 - **A Linux machine with an interface on the peering LAN.** Any of these works:
   - a Linux router with its IX port or VLAN, where the sensor runs alongside your routing daemon;
@@ -46,7 +46,7 @@ Your IXP then gets its own section on ix.watch, credited "via" your network.
 
 The sensor uses next to no CPU: a kernel filter drops plain unicast IP before Python sees it.
 
-### 2. Ask us for an account
+### 1. Ask us for an account
 
 Mail **noc at ix dot watch** with:
 
@@ -57,16 +57,16 @@ Mail **noc at ix dot watch** with:
 You get back an MQTT username (your AS, like `as64500`) and a password. We add the IXP to
 ix.watch and set the "via" credit on our side; the sensor doesn't send it.
 
-### 3. Install the sensor
+### 2. Install the sensor
 
-Copy `ixsensor.py` and `ix-sensor.service` from this repository to the machine, then:
+Clone this repository to `/opt/ix-sensor`; the service runs the sensor from there.
 
 ```sh
-apt install python3-paho-mqtt          # or: pip install paho-mqtt
-install -m 755 ixsensor.py /usr/local/bin/ixsensor.py
+apt install git python3-paho-mqtt      # or: pip install paho-mqtt
+git clone <this repository's URL> /opt/ix-sensor
 ```
 
-### 4. Find your peering interface
+### 3. Find your peering interface
 
 ```sh
 ip -br addr
@@ -76,10 +76,10 @@ It's the interface that carries your address on the IXP's LAN, for example `eth1
 `193.239.117.42/22`. On a mirror port there's no address: use the interface the mirror
 arrives on.
 
-### 5. Write the config
+### 4. Write the config
 
 Create `/etc/ix-sensor.json` with your interface, the IXP's name and prefixes, and the
-account from step 2:
+account from step 1:
 
 ```json
 {
@@ -102,10 +102,10 @@ chmod 600 /etc/ix-sensor.json          # it holds the MQTT password
   and without those it turns those checks off.
 - `state_file` keeps the counts across restarts. It's optional.
 
-### 6. Run it once by hand
+### 5. Run it once by hand
 
 ```sh
-python3 /usr/local/bin/ixsensor.py --config /etc/ix-sensor.json
+python3 /opt/ix-sensor/ixsensor.py --config /etc/ix-sensor.json
 ```
 
 Within a few seconds you should see these lines (each after a timestamp and `INFO`):
@@ -120,37 +120,37 @@ Then a `New: ...` line for each source it catches, for example `New: ra from
 44:4c:a8:ce:07:f3 on NL-IX`. A quiet LAN can take a while to show one. Stop it with Ctrl-C;
 it saves its state and exits.
 
-### 7. Run it as a service
+### 6. Run it as a service
 
 ```sh
-cp ix-sensor.service /etc/systemd/system/
+cp /opt/ix-sensor/ix-sensor.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now ix-sensor
-journalctl -u ix-sensor -f             # the same lines as in step 6
+journalctl -u ix-sensor -f             # the same lines as in step 5
 ```
 
-### 8. Check it on ix.watch
+### 7. Check it on ix.watch
 
-Once we've added the IXP (step 2), it appears on [ix.watch](https://ix.watch): in the IXP
+Once we've added the IXP (step 1), it appears on [ix.watch](https://ix.watch): in the IXP
 filter above the table, and as a line card in "The fabric", credited via your network. A
 network caught on your IXP shows up in the table within seconds of the sensor seeing it.
 
 ### Updating and stopping
 
-- **Update:** copy the new `ixsensor.py` over the old one, then `systemctl restart ix-sensor`.
-  The state file keeps the counts.
+- **Update:** `git -C /opt/ix-sensor pull && systemctl restart ix-sensor`. The state file
+  keeps the counts.
 - **Stop:** `systemctl disable --now ix-sensor`, and mail us so we take the IXP off the site.
 
 ### If something's wrong
 
-| Log line | What to do |
-|---|---|
-| `paho-mqtt is missing` | Install it (step 3). |
-| `peering LAN unknown, ARP/ND address checks off` | Add the IXP to `prefixes` (step 5). The other checks still run. |
-| `MQTT connect refused (rc=4)` or `(rc=5)` | The username or password is wrong. Check `name` and `mqtt` against our mail. |
+| Log line                                                | What to do                                                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `paho-mqtt is missing`                                  | Install it (step 2).                                                                        |
+| `peering LAN unknown, ARP/ND address checks off`        | Add the IXP to `prefixes` (step 4). The other checks still run.                             |
+| `MQTT connect refused (rc=4)` or `(rc=5)`               | The username or password is wrong. Check `name` and `mqtt` against our mail.                |
 | `MQTT disconnected (rc=…), reconnecting`, over and over | The sensor can't reach `mqtt.bgp.rodeo` on port 443. Check outbound HTTPS from the machine. |
-| `BPF pre-filter on … not attached` | It still works, but sees all traffic, so it uses more CPU. Mail us the full line. |
-| `… changed: ifindex … reopening` | The interface was recreated (a VLAN or link flap). It picks it up again by itself. |
+| `BPF pre-filter on … not attached`                      | It still works, but sees all traffic, so it uses more CPU. Mail us the full line.           |
+| `… changed: ifindex … reopening`                        | The interface was recreated (a VLAN or link flap). It picks it up again by itself.          |
 
 ## Changing the sensor
 
