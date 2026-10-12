@@ -63,7 +63,7 @@ Clone this repository to `/opt/ix-sensor`; the service runs the sensor from ther
 
 ```sh
 apt install git python3-paho-mqtt      # or: pip install paho-mqtt
-git clone <this repository's URL> /opt/ix-sensor
+git clone https://github.com/NickBouwhuis/ix-sensor.git /opt/ix-sensor
 ```
 
 ### 3. Find your peering interface

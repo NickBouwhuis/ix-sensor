@@ -3,7 +3,7 @@
 # systemd unit for ix-sensor (ixsensor.py), the detect-and-report-only watcher that
 # people outside AS202585 run to feed https://ix.watch.
 # Runs the sensor from its git clone in /opt/ix-sensor (see the README):
-#   git clone <this repository's URL> /opt/ix-sensor
+#   git clone https://github.com/NickBouwhuis/ix-sensor.git /opt/ix-sensor
 #   chmod 600 /etc/ix-sensor.json                          # holds the MQTT password
 #   cp /opt/ix-sensor/ix-sensor.service /etc/systemd/system/ && systemctl enable --now ix-sensor
 [Unit]
