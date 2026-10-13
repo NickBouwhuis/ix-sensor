@@ -18,7 +18,8 @@ Config (mode 0600, it holds the MQTT password):
       "interfaces": { "eth1.100": "NL-IX" },           # peering LAN interface -> IX name
       "prefixes": { "NL-IX": ["193.239.116.0/22", "2001:7f8:13::/64"] },  # optional, see peering_lan()
       "mqtt": { "url": "wss://mqtt.ix.watch/", "username": "as64500", "password": "..." },
-      "state_file": "/var/lib/ix-sensor/state.json"    # optional
+      "state_file": "/var/lib/ix-sensor/state.json",   # optional
+      "site": "ams"                                    # optional: one per host sharing the name
     }
 
 Needs root (raw sockets, promiscuous mode). Standard library + paho-mqtt only.
@@ -435,15 +436,19 @@ class MqttPublisher:
          <ix>/<mac>/state       retained full state of one source (absolute counts); empty when forgotten
          <ix>/<mac>/packet      each sampled frame, not retained
     get_status() -> dict and get_states() -> [(ix, mac, state)] are called on every (re)connect,
-    so everything is republished and the broker needs no persistence."""
+    so everything is republished and the broker needs no persistence.
+    Several hosts can share one name, each with its own site: its status goes to status/<site>
+    and its client id gets the site, so they don't take over each other's connection."""
 
-    def __init__(self, cfg, name, get_status, get_states):
+    def __init__(self, cfg, name, get_status, get_states, site=None):
         import paho.mqtt.client as mqtt  # python3-paho-mqtt; 1.6 (Debian 12) and 2.x both work
         self.name, self.get_status, self.get_states = name, get_status, get_states
+        self.site = self._seg(site) if site else None
         u = urllib.parse.urlparse(cfg["url"])
         ws = u.scheme in ("ws", "wss")
         tls = u.scheme in ("wss", "mqtts")
-        kwargs = {"client_id": f"ixw-{name}", "clean_session": True, "transport": "websockets" if ws else "tcp"}
+        client_id = f"ixw-{name}-{self.site}" if self.site else f"ixw-{name}"
+        kwargs = {"client_id": client_id, "clean_session": True, "transport": "websockets" if ws else "tcp"}
         try:
             self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, **kwargs)
         except AttributeError:  # paho < 2
@@ -453,7 +458,7 @@ class MqttPublisher:
         if tls:
             self.c.tls_set()
         self.c.username_pw_set(cfg["username"], cfg["password"])
-        self.c.will_set(self._t("status"), json.dumps({"online": False}), qos=1, retain=True)
+        self.c.will_set(self._status_t(), json.dumps({"online": False}), qos=1, retain=True)
         self.c.max_queued_messages_set(20000)
         self.c.reconnect_delay_set(1, 60)
         self.c.on_connect = self._on_connect
@@ -489,18 +494,23 @@ class MqttPublisher:
     def _t(self, *parts):
         return "/".join(["ixw", self._seg(self.name), *map(self._seg, parts)])
 
+    def _status_t(self):
+        return self._t("status", self.site) if self.site else self._t("status")
+
     def _on_connect(self, client, userdata, flags, rc):
         if rc != 0:
             log.error(f"MQTT connect refused (rc={rc}); check username/password")
             return
         states = self.get_states()
+        if self.site:  # what this name sent before it had sites; another site's, now that it has
+            self.c.publish(self._t("status"), b"", qos=1, retain=True)
         self.status()
         for ix, mac, st in states:
             self.state(ix, mac, st)
         log.info(f"MQTT connected as {self.name}; published {len(states)} source states")
 
     def status(self):
-        self.c.publish(self._t("status"), json.dumps({"online": True, **self.get_status(), "ts": int(time.time())}),
+        self.c.publish(self._status_t(), json.dumps({"online": True, **self.get_status(), "ts": int(time.time())}),
                        qos=1, retain=True)
 
     def state(self, ix, mac, st):
@@ -534,7 +544,7 @@ class Sensor:
         self.ips = {}                                        # (ix, mac) -> IP from the neighbour table
         self.up = {}                                         # ix -> capture healthy
         self.load()
-        self.mqtt = MqttPublisher(cfg["mqtt"], self.name, self.status, self.all_states)
+        self.mqtt = MqttPublisher(cfg["mqtt"], self.name, self.status, self.all_states, site=cfg.get("site"))
 
     # -- state --
     def source(self, ix, mac):

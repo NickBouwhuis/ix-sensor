@@ -101,6 +101,9 @@ chmod 600 /etc/ix-sensor.json          # it holds the MQTT password
   the LAN. Without it the sensor uses the interface's own addresses (none on a mirror port),
   and without those it turns those checks off.
 - `state_file` keeps the counts across restarts. It's optional.
+- `site` is only for running sensors on more than one host with the same account: give each
+  host its own short `site` (like `"ams"` and `"fra"`). Without it, two hosts on one account
+  keep knocking each other off the broker.
 
 ### 5. Run it once by hand
 
