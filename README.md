@@ -28,6 +28,9 @@ headers plus the raw frame (at most 1600 bytes), for the public pcap download. T
 frames the source sent to the whole peering LAN (broadcast or multicast), or to your router.
 ix.watch resolves who owns the MAC.
 
+Per IX, every minute: whether the capture is up, and how many frames it has read in all
+(a count, no contents), for the frames-per-second figure on ix.watch.
+
 ## Add an IX to ix.watch
 
 You're a member of an IXP that ix.watch doesn't watch yet, and you'd like it to. The sensor

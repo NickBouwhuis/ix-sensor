@@ -438,7 +438,8 @@ def open_capture(iface):
 
 class MqttPublisher:
     """Publishes under ixw/<name>/ (the broker only lets a user write under its own name):
-         status                 retained {"online", "ixes": [{"ix", "up"}], "ts"}; last will flips online off
+         status                 retained {"online", "ixes": [{"ix", "up", "frames"?}], "ts"}; last will flips online off
+                                (frames: every frame read on that IX, a counter; the sensor sends it, ix-watcher doesn't)
          <ix>/<mac>/state       retained full state of one source (absolute counts); empty when forgotten
          <ix>/<mac>/packet      each sampled frame, not retained
     get_status() -> dict and get_states() -> [(ix, mac, state)] are called on every (re)connect,
@@ -543,6 +544,7 @@ class Sensor:
         self.state_file = cfg.get("state_file", "/var/lib/ix-sensor/state.json")
         self.lock = threading.Lock()
         self.counts = defaultdict(int)                       # (ix, type, mac) -> frames
+        self.frames = defaultdict(int)                       # ix -> every frame read (after the BPF pre-filter)
         self.first = {}                                      # (ix, type, mac) -> ts
         self.last = {}                                       # (ix, type, mac) -> ts
         self.sampled = {}                                    # (ix, type, mac) -> ts of last decode
@@ -569,7 +571,7 @@ class Sensor:
             return [(ix, mac, self.source(ix, mac)) for ix, mac in {(ix, mac) for ix, _, mac in self.counts}]
 
     def status(self):
-        return {"ixes": [{"ix": ix, "up": bool(self.up.get(ix))} for ix in sorted(set(self.ifaces.values()))]}
+        return {"ixes": [{"ix": ix, "up": bool(self.up.get(ix)), "frames": self.frames[ix]} for ix in sorted(set(self.ifaces.values()))]}
 
     def save(self):
         with self.lock:
@@ -646,6 +648,7 @@ class Sensor:
                     continue
             try:
                 data = sock.recv(65535)
+                self.frames[ix] += 1
             except socket.timeout:
                 continue
             except OSError as e:
