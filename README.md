@@ -18,6 +18,7 @@ member routers. The sensor flags everything else it can recognise:
 | `romon`, `ubnt`, `rarp`        | MikroTik RoMON, Ubiquiti discovery (UDP 10001), reverse ARP                                            |
 | `broadcast`, `multicast`       | other L2 broadcast and multicast                                                                       |
 | `arp-offlan`, `nd-offlan`      | ARP or IPv6 ND for a LAN address, sent from an address outside the LAN                                 |
+| `arp-probe`                    | ARP probes (sender 0.0.0.0) for addresses outside the LAN                                              |
 
 ## What it sends
 
@@ -146,14 +147,14 @@ network caught on your IXP shows up in the table within seconds of the sensor se
 
 ### If something's wrong
 
-| Log line                                                | What to do                                                                                  |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `paho-mqtt is missing`                                  | Install it (step 2).                                                                        |
-| `peering LAN unknown, ARP/ND address checks off`        | Add the IXP to `prefixes` (step 4). The other checks still run.                             |
-| `MQTT connect refused (rc=4)` or `(rc=5)`               | The username or password is wrong. Check `name` and `mqtt` against our mail.                |
+| Log line                                                | What to do                                                                                 |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `paho-mqtt is missing`                                  | Install it (step 2).                                                                       |
+| `peering LAN unknown, ARP/ND address checks off`        | Add the IXP to `prefixes` (step 4). The other checks still run.                            |
+| `MQTT connect refused (rc=4)` or `(rc=5)`               | The username or password is wrong. Check `name` and `mqtt` against our mail.               |
 | `MQTT disconnected (rc=…), reconnecting`, over and over | The sensor can't reach `mqtt.ix.watch` on port 443. Check outbound HTTPS from the machine. |
-| `BPF pre-filter on … not attached`                      | It still works, but sees all traffic, so it uses more CPU. Mail us the full line.           |
-| `… changed: ifindex … reopening`                        | The interface was recreated (a VLAN or link flap). It picks it up again by itself.          |
+| `BPF pre-filter on … not attached`                      | It still works, but sees all traffic, so it uses more CPU. Mail us the full line.          |
+| `… changed: ifindex … reopening`                        | The interface was recreated (a VLAN or link flap). It picks it up again by itself.         |
 
 ## Changing the sensor
 

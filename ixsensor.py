@@ -167,16 +167,22 @@ def classify(dst, src, etype, payload, lan=()):
     """Classify frame as violation type, or None if acceptable.
 
     lan is peering_lan() of the interface; without it ARP and ND aren't checked."""
-    # ARP for a member's LAN address must come from the asker's own LAN address. Only that
-    # pattern is flagged: a target outside the LAN may be a prefix PeeringDB doesn't list
-    # (Frys-IX's VLAN carries an unlisted 185.1.203.0/24), so the frame proves nothing.
-    # 0.0.0.0 as sender is an address-conflict probe (RFC 5227).
+    # ARP for a member's LAN address must come from the asker's own LAN address. A request from
+    # a LAN address for one outside it isn't flagged: the target may be a second subnet on the
+    # VLAN that PeeringDB doesn't list.
+    # 0.0.0.0 as sender is an address-conflict probe (RFC 5227), and a host probes the address it
+    # wants for itself, which on an IX is on the LAN. Probing addresses outside it is a router
+    # checking addresses of its other ports or other networks (another IX's LAN) on this one.
     if etype == 0x0806:
         if len(payload) < 28 or payload[0:6] != b"\x00\x01\x08\x00\x06\x04":  # Ethernet/IPv4
             return None
         spa, tpa = payload[14:18], payload[24:28]
         if spa != b"\0\0\0\0" and _in_lan(lan, 4, tpa) and not _in_lan(lan, 4, spa):
             return "arp-offlan"
+        # Only with an IPv4 prefix to compare against: on an IPv6-only LAN everything is "outside".
+        if (spa == b"\0\0\0\0" and tpa != b"\0\0\0\0" and any(v == 4 for v, _, _ in lan)
+                and not _in_lan(lan, 4, tpa)):
+            return "arp-probe"
         return None
 
     # LLDP
